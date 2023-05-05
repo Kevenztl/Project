@@ -7,6 +7,7 @@
 # IMPORTS ------------------------------------------------------------------------------------------------------------#
 
 import random, copy, time
+import traceback
 from   template     import GameState
 from   func_timeout import func_timeout, FunctionTimedOut
 from   template     import Agent as DummyAgent
@@ -125,6 +126,7 @@ class Game:
                     except FunctionTimedOut:
                         selected = "timeout"
                     except Exception as e:
+                        traceback.print_exc()
                         exception = e
                         
                     if agent_index != self.game_rule.num_of_agent:

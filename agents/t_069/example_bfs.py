@@ -58,7 +58,7 @@ class myAgent():
                 next_path  = path + [a]                   # Add this action to the path.
                 goal     = self.DoAction(next_state, a) # Carry out this action on the state, and check for goal
                 if goal:
-                    print(f'Move {self.turn_count}, path found:', next_path)
+                    print('path found:', next_path)
                     return next_path[0] # If the current action reached the goal, return the initial action that led there.
                 else:
                     queue.append((next_state, next_path)) # Else, simply add this state and its path to the queue.
