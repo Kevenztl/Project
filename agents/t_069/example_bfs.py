@@ -38,9 +38,11 @@ class myAgent():
         score = state.agents[self.id].score
         state = self.game_rule.generateSuccessor(state, action, self.id)
         
-        goal_reached = False #TODO: Students, how should agent check whether it reached goal or not
-        
-        return goal_reached
+        for plr_state in state.agents:
+            completed_row = plr_state.GetCompletedRows()
+            if completed_row > 0:
+                return True        
+        return False
 
     # Take a list of actions and an initial state, and perform breadth-first search within a time limit.
     # Return the first action that leads to goal, if any was found.
