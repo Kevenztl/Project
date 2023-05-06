@@ -41,8 +41,8 @@ class myAgent(Agent):
     # Get the max score different
     def heuristic(self, state):
         my_score = self.game_rule.calScore(state,self.id)
-        opponent_score = self.game_rule.calScore(state,1-self.id)
-        return my_score - opponent_score
+        return my_score
+
 
     def SelectAction(self,actions,rootstate):
         best_action = self.bestRandomAction(actions)
