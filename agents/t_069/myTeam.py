@@ -39,10 +39,29 @@ class myAgent(Agent):
 
         return best_action
     
-    # Get the max score different
+    def floor_line_penalty(self,agent_state):
+        penalty = 0
+        for i in range(len(agent_state.floor)):
+            penalty += agent_state.floor[i] * agent_state.FLOOR_SCORES[i]
+        return penalty
+    
+    # def heuristic(self, state):
+    #     my_score = self.game_rule.calScore(state,self.id)
+    #     floorline_penalty = self.floor_line_penalty(state.agents[self.id])
+    #     my_score = -1 * my_score
+    #     return my_score + floorline_penalty
+
     def heuristic(self, state):
-        my_score = self.game_rule.calScore(state,self.id)
-        return -1 * my_score
+        agent_state = state.agents[self.id]
+
+        penalty = self.floor_line_penalty(agent_state)
+
+        completed_rows = agent_state.GetCompletedRows()
+        completed_columns = agent_state.GetCompletedColumns()
+        completed_sets = agent_state.GetCompletedSets()
+
+        heuristic_value = (5 * completed_rows) + (7 * completed_columns) + (10 * completed_sets) - penalty
+        return -1 * heuristic_value
 
 
     def SelectAction(self,actions,rootstate):
