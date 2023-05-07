@@ -30,6 +30,7 @@ class myAgent(Agent):
             if not isinstance(action,str):
                 if action[2].num_to_floor_line == 0:
                     alternative_actions.append(action)
+                
                 elif action[2].num_to_floor_line < best_action[2].num_to_floor_line:
                     best_action = action
         
@@ -41,7 +42,7 @@ class myAgent(Agent):
     # Get the max score different
     def heuristic(self, state):
         my_score = self.game_rule.calScore(state,self.id)
-        return my_score
+        return -1 * my_score
 
 
     def SelectAction(self,actions,rootstate):
