@@ -24,7 +24,7 @@ class Game:
                  agent_list, 
                  num_of_agent,
                  seed=1, 
-                 time_limit=1, 
+                 time_limit=1,
                  warning_limit=3, 
                  displayer = None, 
                  agents_namelist = ["Alice","Bob"],

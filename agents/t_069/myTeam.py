@@ -3,7 +3,7 @@ import time,random,heapq
 from copy import deepcopy
 from Azul.azul_model import AzulGameRule as GameRule
 
-from collections import deque
+from collections import dequegi
 
 THINKTIME   = 0.9
 NUM_PLAYERS = 2

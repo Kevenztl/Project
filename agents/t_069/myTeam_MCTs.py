@@ -17,12 +17,11 @@ class MctNode(object):
         self.parent = parent
         self.visit_times = 0
         self.children: List[MctNode] = []
-        self.actions = self.GetActions(state,_id)
         self.current_move = current_action
-        self.g_state: state
+        self.g_state = state
         self.player_id = _id
         self.game_rule = game_rule
-
+        self.actions = self.GetActions(state, _id)
     # Generates actions from this state.
     def GetActions(self, state, _id):
         return self.game_rule.getLegalActions(state, _id)
@@ -76,6 +75,7 @@ class myAgent(Agent):
     def __init__(self,_id):
         super().__init__(_id)
         self.game_rule = GameRule(NUM_PLAYERS)
+        self.count = 0
 
     # Generates actions from this state.
     def GetActions(self, state, _id):
@@ -121,8 +121,11 @@ class myAgent(Agent):
     #     return best_action
     
     def selectState(self, node):
-        while node.isExpanded():
-            node = node.get_best_value_child()
+        while node and node.isExpanded():
+            if node.get_best_value_child():
+                node = node.get_best_value_child()
+            else:
+                break
         return node
 
     # def isExpanded(self, state):
@@ -131,7 +134,7 @@ class myAgent(Agent):
         actions = node.GetActions(node.g_state, node.player_id)
         for action in actions:
             new_state = self.DoAction(deepcopy(node.g_state), action, node.player_id)
-            child_node = MctNode(node.player_id, new_state, node, action)
+            child_node = MctNode(node.player_id, new_state, node, action, self.game_rule)
             node.children.append(child_node)
 
     # def calculateReward(self,state):
@@ -151,38 +154,59 @@ class myAgent(Agent):
             for p in state.agents:
                 if not state.TilesRemaining():
                     break
-                opponent_id = 1-self.id
-                opponent_state = deepcopy(self.GetActions(state,opponent_id))
-                opponent_action = self.bestRandomAction(opponent_state)
-                self.DoAction(opponent_state,opponent_action,opponent_id)
+                if p.id == self.id:
+                    actions = self.GetActions(state,self.id)
+                    # my_action = self.SelectAction(actions,state)
+                    # self.DoAction(state, my_action, self.id)
+                    my_action = self.bestRandomAction(actions)
+                    self.DoAction(state, my_action, self.id)
+                else:
+                    opponent_id = 1-self.id
+                    opponent_actions = self.GetActions(state,opponent_id)
+                    opponent_action = self.bestRandomAction(opponent_actions)
+                    self.DoAction(state,opponent_action,opponent_id)
                 # state.ExecuteMove(p.id, player.SelectMove(p.GetAvailableMoves(state), state))
 
             state.ExecuteEndOfRound()
 
-        reward = {}
-        for p in state.AgentState:
-            reward[p.id] = p.score
+        agent_reward = {}
+        for p in state.agents:
+            agent_reward[p.id] = p.score
+        reward = agent_reward[self.id]-agent_reward[1-self.id]
+        # reward = agent_reward[self.id]
         return reward
         # reward = self.calculateReward(state)
         # return reward
 
     # def BackPropagation():
     def BackPropagation(self, node, reward):
+        print("bp")
         while node is not None:
             node.visit_times += 1
             node.q_value += reward  # Assuming reward is the same for all nodes in the path
             node = node.parent
 
     def SelectAction(self, actions, game_state):
-        root = MctNode(self.id, deepcopy(game_state), None, None)
-        for _ in range(1000):  # Assuming 1000 rollouts
-            v = self.selectState(root)
-            if not v.is_round_end():
-                self.Expand(v)
-            reward = self.Simulation(v)
-            self.BackPropagation(v, reward)
-        best_child = root.get_best_value_child()
-        return best_child.current_move
+        self.count += 1
+        root = MctNode(self.id, deepcopy(game_state), None, None, self.game_rule)
+        start_time = time.time()
+        best_action = self.bestRandomAction(actions)
+
+        while time.time() - start_time < THINKTIME:
+            if self.count < 20:
+                best_action = self.bestRandomAction(actions)
+                return best_action
+            else:
+                v = self.selectState(root)
+                if not v.is_round_end():
+                    self.Expand(v)
+                reward = self.Simulation(v)
+                self.BackPropagation(v, reward)
+                best_child = root.get_best_value_child()
+                best_action = best_child.current_move
+        if time.time() - start_time >= THINKTIME:
+            print("time out!!!!!!!!!!!!!!!!!!!")
+        return best_action
 
     
 
