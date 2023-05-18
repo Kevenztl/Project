@@ -45,7 +45,15 @@ class MctNode(object):
             if child.q_value > best_child.q_value:
                 best_child = child
         return best_child
-
+    def get_random_value_child(self):
+        if len(self.children) == 0:
+            return None
+        # best_child = self.children[0]
+        # for child in self.children:
+        #     if child.q_value > best_child.q_value:
+        #         best_child = child
+        random_child = random.choice(self.children)
+        return random_child     
     # def get_best_value_child(self):
     #     best_child = self.children[0]
     #     for child in self.children:
@@ -122,8 +130,11 @@ class myAgent(Agent):
     
     def selectState(self, node):
         while node and node.isExpanded():
-            if node.get_best_value_child():
-                node = node.get_best_value_child()
+            if node.get_best_value_child() and node.get_best_value_child():
+                if(random.uniform(0,1)<1- EPSILON):
+                    node = node.get_random_value_child()
+                else:
+                    node = node.get_best_value_child()
             else:
                 break
         return node
@@ -149,8 +160,10 @@ class myAgent(Agent):
     #     reward = self.calculateReward(state_copy)  # You need to implement calculateReward function
     #     return reward
     def Simulation(self, node: MctNode):
+        length =0
         state = deepcopy(node.g_state)
         while state.TilesRemaining():
+            length+=1
             for p in state.agents:
                 if not state.TilesRemaining():
                     break
@@ -174,16 +187,16 @@ class myAgent(Agent):
             agent_reward[p.id] = p.score
         reward = agent_reward[self.id]-agent_reward[1-self.id]
         # reward = agent_reward[self.id]
-        return reward
+        return reward,length
         # reward = self.calculateReward(state)
         # return reward
 
     # def BackPropagation():
-    def BackPropagation(self, node, reward):
+    def BackPropagation(self, node, reward,length):
         print("bp")
         while node is not None:
             node.visit_times += 1
-            node.q_value += reward  # Assuming reward is the same for all nodes in the path
+            node.q_value += reward*(GAMMA**length) # Assuming reward is the same for all nodes in the path
             node = node.parent
 
     def SelectAction(self, actions, game_state):
@@ -200,8 +213,8 @@ class myAgent(Agent):
                 v = self.selectState(root)
                 if not v.is_round_end():
                     self.Expand(v)
-                reward = self.Simulation(v)
-                self.BackPropagation(v, reward)
+                reward,length = self.Simulation(v)
+                self.BackPropagation(v, reward,length)
                 best_child = root.get_best_value_child()
                 best_action = best_child.current_move
         if time.time() - start_time >= THINKTIME:
