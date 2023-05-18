@@ -9,7 +9,7 @@ THINKTIME   = 0.9
 NUM_PLAYERS = 2
 GAMMA = 0.9
 ALPHA = 0.6
-EPSILON = 0.5
+EPSILON = 0.9
 
 class MctNode(object):
     def __init__(self,_id,state,parent,current_action,game_rule):
@@ -131,10 +131,10 @@ class myAgent(Agent):
     def selectState(self, node):
         while node and node.isExpanded():
             if node.get_best_value_child() and node.get_best_value_child():
-                if(random.uniform(0,1)<1- EPSILON):
-                    node = node.get_random_value_child()
-                else:
-                    node = node.get_best_value_child()
+                # if(random.uniform(0,1)<1- EPSILON):
+                #     node = node.get_random_value_child()
+                # else:
+                node = node.get_best_value_child()
             else:
                 break
         return node
@@ -159,11 +159,13 @@ class myAgent(Agent):
     #         self.DoAction(state_copy, random_action, state.player_id)
     #     reward = self.calculateReward(state_copy)  # You need to implement calculateReward function
     #     return reward
-    def Simulation(self, node: MctNode):
+    def Simulation(self, node: MctNode,start_time: float):
         length =0
         state = deepcopy(node.g_state)
         while state.TilesRemaining():
             length+=1
+            if time.time() - start_time >= THINKTIME:
+                return None, None
             for p in state.agents:
                 if not state.TilesRemaining():
                     break
@@ -192,9 +194,11 @@ class myAgent(Agent):
         # return reward
 
     # def BackPropagation():
-    def BackPropagation(self, node, reward,length):
-        print("bp")
+    def BackPropagation(self, node, reward,length,start_time):
+        # print("bp")
         while node is not None:
+            if time.time() - start_time >= THINKTIME:
+                return
             node.visit_times += 1
             node.q_value += reward*(GAMMA**length) # Assuming reward is the same for all nodes in the path
             node = node.parent
@@ -213,12 +217,17 @@ class myAgent(Agent):
                 v = self.selectState(root)
                 if not v.is_round_end():
                     self.Expand(v)
-                reward,length = self.Simulation(v)
-                self.BackPropagation(v, reward,length)
-                best_child = root.get_best_value_child()
-                best_action = best_child.current_move
-        if time.time() - start_time >= THINKTIME:
-            print("time out!!!!!!!!!!!!!!!!!!!")
+                reward,length = self.Simulation(v,start_time)
+                if reward is None and length is None:
+                    print(self.count)
+                    return best_action  # Exit early if we ran out of time
+                self.BackPropagation(v, reward,length,start_time)
+
+            best_child = root.get_best_value_child()
+            best_action = best_child.current_move
+
+
+        # print("time out!!!!!!!!!!!!!!!!!!!")
         return best_action
 
     
