@@ -12,6 +12,7 @@ EPS = 0.6
 
 class myAgent(Agent):
     def __init__(self, _id):
+        # super().__init__(_id)
         self.id = _id
         self.count = 0
         self.game_rule = GameRule(NUM_PLAYER)
@@ -22,14 +23,15 @@ class myAgent(Agent):
         self.best_action_s = dict()
         self.expanded_action_s = dict()
         self.start_time = None
-        self.THINKTIME = 1  # Set your think time
+        self.THINKTIME = 0.9  # Set your think time
         self.GAMMA = 0.9  # Set your gamma
         self.EPS = 0.2  # Set your epsilon
         self.game_state = None
         self.actions = None
         self.best_action = None
+        self.best_random = None
         self.queue = deque([])
-        self.t_root_state = self.TransformState(self.game_state, self.id)
+        self.t_root_state = None
     def GetActions(self, state, _id):
         actions = self.game_rule.getLegalActions(state, _id)
         if len(actions) == 0:
@@ -107,23 +109,101 @@ class myAgent(Agent):
         else:
             return actions
 
-    def Select(self,count):
-        while len(self.FullyExpanded(self.t_root_state, self.actions)) == 0 and not self.GameEnd(self.game_state):
+    # def Select(self,count):
+    #     while len(self.FullyExpanded(self.t_root_state, self.actions)) == 0 and not self.GameEnd(self.game_state):
+    #         if time.time() - self.start_time >= self.THINKTIME:
+    #             print("MCT:", count)
+    #             return self.best_action
+    #         self.t_root_state = self.TransformState(self.game_state, self.id)
+    #         if (random.uniform(0,1) < self.EPS) and (self.t_root_state in self.best_action_s):
+    #             cur_action = self.best_action_s[self.t_root_state]
+    #         else:
+    #             cur_action = random.choice(self.actions)
+    #         self.queue.append((self.t_root_state, cur_action))
+    #
+    #         self.DoAction(self.game_state, cur_action, self.id)
+    #         self.actions = self.GetActions(self.game_state, self.id)
+
+    def OpponentMove(self, state):
+        op_actions = self.GetActions(state, 1 - self.id)
+        op_action = op_actions[0]
+        self.t_root_state = self.TransformState(state, self.id)
+        for action in op_actions:
+            if not isinstance(action, str):
+                if action[2].num_to_floor_line == 0:
+                    op_action = action
+                    break
+                elif op_action[2].num_to_floor_line > action[2].num_to_floor_line:
+                    op_action = action
+        self.DoAction(state, op_action, 1 - self.id)
+
+    # def Select(self):
+    #     state = deepcopy(self.game_state)
+    #     new_actions = self.actions
+    #     while len(self.FullyExpanded(self.t_root_state, new_actions)) == 0 and not self.GameEnd(state):
+    #         if time.time() - self.start_time >= self.THINKTIME:
+    #             print("MCT:", self.count)
+    #             return self.best_random
+    #         self.t_root_state = self.TransformState(state, self.id)
+    #         cur_action = self.ChooseAction(new_actions)
+    #         self.queue.append((self.t_root_state, cur_action))
+    #
+    #         next_state = deepcopy(state)
+    #         self.DoAction(next_state, cur_action, self.id)
+    #         new_actions = self.GetActions(next_state, self.id)
+    #         state = next_state
+    #
+    #         self.OpponentMove(state)
+    #
+    #         new_actions = self.GetActions(state, self.id)
+    #         state = next_state
+    #     return None
+    def Select(self):
+        state = deepcopy(self.game_state)
+        new_actions = self.actions
+        while len(self.FullyExpanded(self.t_root_state, new_actions)) == 0 and not self.GameEnd(state):
             if time.time() - self.start_time >= self.THINKTIME:
-                print("MCT:", count)
+                print("MCT:", self.count)
+            #     if self.best_action is not None:  # 如果存在最佳的动作，则返回最佳的动作
+            #         return self.best_action
+            #     else:  # 否则，返回一个随机的动作
                 return self.best_action
-            self.t_root_state = self.TransformState(self.game_state, self.agent_id)
-            if (random.uniform(0,1) < self.EPS) and (self.t_root_state in self.best_action_s):
-                cur_action = self.best_action_s[self.t_root_state]
-            else:
-                cur_action = random.choice(self.actions)
+            self.t_root_state = self.TransformState(state, self.id)
+            cur_action = self.ChooseAction(new_actions)
             self.queue.append((self.t_root_state, cur_action))
 
-            self.DoAction(self.game_state, cur_action, self.agent_id)
-            self.actions = self.GetActions(self.game_state, self.agent_id)
+            next_state = deepcopy(state)
+            self.DoAction(next_state, cur_action, self.id)
+            new_actions = self.GetActions(next_state, self.id)
+            state = next_state
 
+            self.OpponentMove(state)
+
+            new_actions = self.GetActions(state, self.id)
+            state = next_state
+        # return None
+
+    def Simulation(self):
+        state = deepcopy(self.game_state)
+        new_actions = self.actions
+        length = 0
+        while not self.GameEnd(state):
+            length += 1
+            if time.time() - self.start_time >= self.THINKTIME:
+                print("MCT", self.count)
+                return None,None
+            cur_action = random.choice(new_actions)
+            next_state = deepcopy(state)
+            self.DoAction(next_state, cur_action, self.id)
+
+            self.OpponentMove(state)
+            self.t_root_state = self.TransformState(state, self.id)
+            new_actions = self.GetActions(next_state, self.id)
+            state = next_state
+        reward = self.GetScore(state, self.id)
+        return reward, length
     def Expand(self):
-        self.t_root_state = self.TransformState(self.game_state, self.agent_id)
+        self.t_root_state = self.TransformState(self.game_state, self.id)
         available_actions = self.FullyExpanded(self.t_root_state, self.actions)
         if len(available_actions) != 0:
             action = random.choice(available_actions)
@@ -132,22 +212,25 @@ class myAgent(Agent):
             else:
                 self.expanded_action_s[self.t_root_state] = [action]
             self.queue.append((self.t_root_state, action))
-            self.DoAction(self.game_state, action, self.agent_id)
-            self.actions = self.GetActions(self.game_state, self.agent_id)
+            next_state = deepcopy(self.game_state)
+            self.DoAction(next_state, action, self.id)
+            self.actions = self.GetActions(next_state, self.id)
+            self.game_state = next_state
 
-    def Simulation(self):
-        length = 0
-        while not self.GameEnd(self.game_state):
-            length += 1
-            cur_action = random.choice(self.actions)
-            self.DoAction(self.game_state, cur_action, self.agent_id)
-            self.actions = self.GetActions(self.game_state, self.agent_id)
-        reward = self.GetScore(self.game_state, self.agent_id)
-        return reward, length
+    # def Simulation(self):
+    #     length = 0
+    #     while not self.GameEnd(self.game_state):
+    #         length += 1
+    #         cur_action = random.choice(self.actions)
+    #         self.DoAction(self.game_state, cur_action, self.id)
+    #         self.actions = self.GetActions(self.game_state, self.id)
+    #     reward = self.GetScore(self.game_state, self.id)
+    #     return reward, length
 
     def Backpropagate(self, reward, length):
         cur_value = reward * (self.GAMMA ** length)
         while len(self.queue) and time.time() - self.start_time < self.THINKTIME:
+            print(1)
             t_state, cur_action = self.queue.pop()
             if t_state in self.vs:
                 if cur_value > self.vs[t_state]:
@@ -160,45 +243,72 @@ class myAgent(Agent):
                 self.best_action_s[t_state] = cur_action
             cur_value *= self.GAMMA
         if self.t_root_state in self.best_action_s:
+            print(1333)
             self.best_action = self.best_action_s[self.t_root_state]
 
+        return self.best_action
+
+    # def MCTS(self):
+    #     count = 0
+    #     while time.time() - self.start_time < self.THINKTIME:
+    #         count += 1
+    #         result = self.Select()
+    #         if result:
+    #
+    #             return result
+    #         self.Expand()
+    #         reward, length = self.Simulation()
+    #         if reward is None and length is None:
+    #             print('csn')
+    #             return self.best_random
+    #         return self.Backpropagate(reward, length)
     def MCTS(self):
         count = 0
         while time.time() - self.start_time < self.THINKTIME:
             count += 1
-            if self.Select(count):
-                return self.best_action
+            self.Select()
+            # result = self.Select()
+            # if result is not None:  # 如果Select返回了一个有效的动作，那么直接返回这个动作
+            #     return result
             self.Expand()
             reward, length = self.Simulation()
-            self.Backpropagate(reward, length)
-        return self.best_action
+            if reward is None and length is None:
+                return self.best_random
+
+            return self.Backpropagate(reward, length)
 
     def SelectAction(self, actions, game_state):
         self.actions = actions
         self.game_state = game_state
         self.start_time = time.time()
-        best_action = random.choice(self.actions)
+        self.count += 1
+        self.best_random = random.choice(self.actions)
         alternative_actions = []
         for action in self.actions:
             if not isinstance(action, str):
                 if action[2].num_to_floor_line == 0:
                     alternative_actions.append(action)
-                elif best_action[2].num_to_floor_line > action[2].num_to_floor_line:
-                    best_action = action
+                elif self.best_random[2].num_to_floor_line > action[2].num_to_floor_line:
+                    self.best_random = action
         if (len(alternative_actions) > 0):
-            best_action = random.choice(alternative_actions)
+            self.best_random = random.choice(alternative_actions)
             matched_line = -1
 
             for action in alternative_actions:
                 cur_line = action[2].pattern_line_dest
                 if cur_line >= 0 and self.game_state .agents[self.id].lines_number[cur_line] + action[2].num_to_pattern_line == cur_line+1:
                     matched_line = max(matched_line, cur_line)
-                    best_action = action
-        if self.count <= 20:
-            return best_action
+                    self.best_random = action
+        if self.count <= 5:
+            return self.best_random
         else:
-            self.MCTS()
-        return best_action
+            best = self.MCTS()
+            if best is None:
+                print("ssss")
+                return self.best_random
+            else:
+                print("dsasadaasadadasdasd")
+                return best
 
 
 

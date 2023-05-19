@@ -7,7 +7,7 @@ from Azul.azul_utils import *
 
 THINKTIME = 0.9
 NUM_PLAYER = 2
-GAMMA = 0.9
+GAMMA = 0.5
 EPS = 0.6
 
 class myAgent(Agent):
