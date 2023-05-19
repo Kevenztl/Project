@@ -5,7 +5,7 @@ from Azul.azul_model import AzulGameRule as GameRule
 
 from collections import deque
 
-THINKTIME   = 10
+THINKTIME   = 0.9
 NUM_PLAYERS = 2
 ALPHA = 0.1
 GAMMA = 0.9
@@ -40,6 +40,28 @@ class myAgent(Agent):
                     best_action = action
         if len(alternative_actions) > 0:
             best_action = random.choice(alternative_actions)
+
+        # # Select move that involves placing the most number of tiles
+        # # in a pattern line. Tie break on number placed in floor line.
+        # most_to_line = -1
+        # corr_to_floor = 0
+
+        # for mid,fid,tgrab in actions:
+        #     if most_to_line == -1:
+        #         best_action = (mid,fid,tgrab)
+        #         most_to_line = tgrab.num_to_pattern_line
+        #         corr_to_floor = tgrab.num_to_floor_line
+        #         continue
+
+        #     if tgrab.num_to_pattern_line > most_to_line:
+        #         best_action = (mid,fid,tgrab)
+        #         most_to_line = tgrab.num_to_pattern_line
+        #         corr_to_floor = tgrab.num_to_floor_line
+        #     elif tgrab.num_to_pattern_line == most_to_line and \
+        #         tgrab.num_to_pattern_line < corr_to_floor:
+        #         best_action = (mid,fid,tgrab)
+        #         most_to_line = tgrab.num_to_pattern_line
+        #         corr_to_floor = tgrab.num_to_floor_line
         return best_action
 
     def GetScore(self, state, next_state, _id):
