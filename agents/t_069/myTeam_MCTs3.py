@@ -43,6 +43,20 @@ class MCTS:
             self.agent.DoAction(next_state, cur_action, self.id)
             actions = self.agent.GetActions(next_state, self.id)
             state = next_state
+            op_actions = self.agent.GetActions(next_state,1-self.id)
+            op_action = op_actions[0]
+            # t_cur_state = self.TransformState(state, self.id)
+            for action in op_actions:
+                if not isinstance(action,str):
+                    if action[2].num_to_floor_line == 0:
+                        op_action = action
+                        break
+                    elif op_action[2].num_to_floor_line>action[2].num_to_floor_line:
+                        op_action = action
+            self.agent.DoAction(next_state,op_action,1-self.id)
+            # t_cur_state = self.TransformState(state,self.id)
+            actions = self.agent.GetActions(next_state,self.id)
+            state = next_state
         return state, actions,queue
 
     def expand(self, actions, state, queue):
