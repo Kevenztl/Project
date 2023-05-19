@@ -77,7 +77,7 @@ class myAgent(Agent):
             ns = dict()
             best_action_s = dict()
             expanded_action_s = dict()
-            t_root_state = 'r'
+            t_root_state = self.TransformState(game_state,self.id)
             count = 0
 
             def FullyExpanded(t_state, actions):
@@ -118,7 +118,7 @@ class myAgent(Agent):
                 #oppo move
                     op_actions = self.GetActions(next_state,1-self.id)
                     op_action = op_actions[0]
-                    t_cur_state = self.TransformState(state, self.id)
+                    # t_cur_state = self.TransformState(state, self.id)
                     for action in op_actions:
                         if not isinstance(action,str):
                             if action[2].num_to_floor_line == 0:
@@ -162,7 +162,7 @@ class myAgent(Agent):
                     self.DoAction(next_state,cur_action,self.id)
                     op_actions = self.GetActions(next_state,1-self.id)
                     op_action = op_actions[0]
-                    t_cur_state = self.TransformState(state, self.id)
+                    # t_cur_state = self.TransformState(state, self.id)
                     for action in op_actions:
                         if not isinstance(action,str):
                             if action[2].num_to_floor_line == 0:
@@ -190,7 +190,10 @@ class myAgent(Agent):
                         ns[t_state] = 1
                         best_action_s[t_state] = cur_action
                     cur_value *= GAMMA
+                # print(best_action_s.keys())
+                print(t_root_state)
                 if t_root_state in best_action_s:
+                    print('yes')
                     best_action = best_action_s[t_root_state]
 
         return best_action
