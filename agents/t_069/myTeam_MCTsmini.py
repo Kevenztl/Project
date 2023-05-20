@@ -43,7 +43,7 @@ class MCTS:
     #     if action_visits == 0:
     #         return float('inf')
     #     return action_value / action_visits + c * math.sqrt(math.log(total_visits) / action_visits)
-    def UCTValue(self, state, t_state, action, total_visits, c=1, q_weight=0.5):
+    def UCTValue(self, state, t_state, action, total_visits, c=0.3, q_weight=0.85):
         action_visits = self.ns.get((t_state, action), 0)
         action_value = self.agent.CalQValue(state, action,self.id)  # Use Q-value as the action value
         if action_visits == 0:
@@ -114,7 +114,7 @@ class MCTS:
             actions = self.agent.GetActions(next_state, self.id)
             state = next_state
         return state, actions, queue
-    def simulate(self, state, new_actions, start_time, max_depth=20):
+    def simulate(self, state, new_actions, start_time, max_depth=5):
         length = 0
         depth = 0
         while not self.agent.GameEnd(state) and depth < max_depth:
