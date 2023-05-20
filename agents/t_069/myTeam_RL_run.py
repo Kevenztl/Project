@@ -19,7 +19,6 @@ class myAgent(Agent):
     def DoAction(self, state, action):
         state = self.game_rule.generateSuccessor(state, action, self.id)
 
-
     def CalFeatures(self, state, action):
         features = []
         next_state = deepcopy(state)
@@ -39,7 +38,7 @@ class myAgent(Agent):
         features = self.CalFeatures(state, action)
         if len(features) != len(self.weight):
             print("F ansd W length not matched")
-            return -99999
+            return -float('inf')
         else:
             ans = 0
             for i in range(len(features)):
@@ -49,7 +48,7 @@ class myAgent(Agent):
     def SelectAction(self, actions, game_state):
         start_time = time.time()
         best_action = random.choice(actions)
-        best_Q_value = -999999
+        best_Q_value = -float('inf')
         if len(actions) > 1:
             for action in actions:
                 if time.time() - start_time > THINKTIME:

@@ -72,7 +72,7 @@ class myAgent(Agent):
         features = self.CalFeature(state,action,_id)
         if len(features) != len(self.weight):
             print("Length not matched!!!!!!!!!")
-            return -99999
+            return -float('inf')
         else: 
             ans = 0
             for i in range(len(features)):

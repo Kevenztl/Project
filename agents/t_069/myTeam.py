@@ -3,7 +3,7 @@ import time,random,heapq
 from copy import deepcopy
 from Azul.azul_model import AzulGameRule as GameRule
 
-from collections import dequegi
+from collections import deque
 
 THINKTIME   = 0.9
 NUM_PLAYERS = 2
@@ -44,12 +44,8 @@ class myAgent(Agent):
             penalty += agent_state.floor[i] * agent_state.FLOOR_SCORES[i]
         return penalty
     
-
-
     def SelectAction(self,actions,rootstate):
         best_action = self.bestRandomAction(actions)
-
-
         return best_action
 
 
