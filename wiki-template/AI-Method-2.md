@@ -1,22 +1,21 @@
-# AI Method 1 - Computational Approach
+# AI Method 2 - Q-Learning
 
-Your notes about this part of the project, including acknowledgement, comments, strengths and limitations, etc.
+We utilised Q-learning as a reinforcement learning mechanism to continually improve our agent's action selection.
 
-You **do not** need to explain the algorithm. Please tell us how you used it and how you applied it in your team.
 
-If you use greed best first search, then, you can explain about what is the problem (state space model, especially how you define the state, how your define the goal), and heuristic function (as specific as possible) that you used. 
 
-If you use MCTS, then, you can explain about what tree policy/simulation policy you used, how many iteration did you run, what is your reward function, the depth of each simulation etc.
 
 # Table of Contents
-- [Governing Strategy Tree](#governing-strategy-tree)
-  * [Motivation](#motivation)
-  * [Application](#application)
-  * [Solved challenges](#solved-challenges)
-  * [Trade-offs](#trade-offs)     
-     - [Advantages](#advantages)
-     - [Disadvantages](#disadvantages)
-  * [Future improvements](#future-improvements)
+- [AI Method 2 - Q-Learning](#ai-method-2---q-learning)
+- [Table of Contents](#table-of-contents)
+  - [Governing Strategy Tree](#governing-strategy-tree)
+    - [Motivation](#motivation)
+    - [Application](#application)
+    - [Solved Challenges](#solved-challenges)
+    - [Trade-offs](#trade-offs)
+      - [*Advantages*](#advantages)
+      - [*Disadvantages*](#disadvantages)
+    - [Future improvements](#future-improvements)
 
 ## Governing Strategy Tree  
 
