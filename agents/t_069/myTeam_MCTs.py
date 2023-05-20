@@ -1,5 +1,5 @@
 from template import Agent
-import time, random
+import time, random, math
 from Azul.azul_model import AzulGameRule as GameRule
 from copy import deepcopy
 from collections import deque
@@ -27,17 +27,50 @@ class MCTS:
             return available_actions
         else:
             return actions
+        
+    def UCTValue(self, t_state, action, total_visits, c = 1.0):
+        action_visits = self.ns.get((t_state, action), 0)
+        action_value = self.vs.get((t_state, action), 0)
+        if action_visits == 0:
+            return float('inf')
+        return action_value / action_visits + c * math.sqrt(math.log(total_visits) / action_visits)
 
+    def bestRandomAction(self,state,actions):
+        best_action = random.choice(actions)
+        game_state = deepcopy(state)
+        alternative_actions = []
+        for action in actions:
+            if not isinstance(action, str):
+                if action[2].num_to_floor_line == 0:
+                    alternative_actions.append(action)
+                elif best_action[2].num_to_floor_line > action[2].num_to_floor_line:
+                    best_action = action
+        if (len(alternative_actions) > 0):
+            best_action = random.choice(alternative_actions)
+            matched_line = -1
+
+            for action in alternative_actions:
+                cur_line = action[2].pattern_line_dest
+                if cur_line >= 0 and game_state.agents[1-self.id].lines_number[cur_line] + action[2].num_to_pattern_line == cur_line+1:
+                    matched_line = max(matched_line, cur_line)
+                    best_action = action
+                    
+        return best_action
+    
     def select(self, t_state, actions, state, queue, start_time):
         while len(self.FullyExpanded(t_state, actions)) == 0 and not self.agent.GameEnd(state):
             if time.time() - start_time >= THINKTIME:
                 print("MCT")
                 return None,None,None
             t_cur_state = self.agent.TransformState(state, self.id)
-            if (random.uniform(0,1) < EPS) and (t_cur_state in self.best_action_s):
-                cur_action = self.best_action_s[t_cur_state]
-            else:
-                cur_action = random.choice(actions)
+            # if (random.uniform(0,1) < EPS) and (t_cur_state in self.best_action_s):
+            #     cur_action = self.best_action_s[t_cur_state]
+            # else:
+            #     cur_action = random.choice(actions)
+            total_visits = sum(self.ns.get((t_state, action), 0) for action in actions)
+            uct_values = {action: self.UCTValue(t_state, action, total_visits) for action in actions}
+            t_cur_state = self.agent.TransformState(state, self.id)
+            cur_action = max(uct_values, key=uct_values.get)
             queue.append((t_cur_state, cur_action))
             next_state = deepcopy(state)
             self.agent.DoAction(next_state, cur_action, self.id)
@@ -82,7 +115,7 @@ class MCTS:
             if time.time() - start_time >= THINKTIME:
                 print("MCT")
                 return None,None
-            cur_action = random.choice(new_actions)
+            cur_action = self.bestRandomAction(state,new_actions)
             next_state = deepcopy(state)
             self.agent.DoAction(next_state,cur_action,self.id)
             op_actions = self.agent.GetActions(next_state,1-self.id)
@@ -155,13 +188,34 @@ class myAgent(Agent):
             if action not in action_list:
                 return False
         return True
+    
+    def bestRandomAction(self,state,actions):
+        best_action = random.choice(actions)
+        game_state = deepcopy(state)
+        alternative_actions = []
+        for action in actions:
+            if not isinstance(action, str):
+                if action[2].num_to_floor_line == 0:
+                    alternative_actions.append(action)
+                elif best_action[2].num_to_floor_line > action[2].num_to_floor_line:
+                    best_action = action
+        if (len(alternative_actions) > 0):
+            best_action = random.choice(alternative_actions)
+            matched_line = -1
 
+            for action in alternative_actions:
+                cur_line = action[2].pattern_line_dest
+                if cur_line >= 0 and game_state.agents[self.id].lines_number[cur_line] + action[2].num_to_pattern_line == cur_line+1:
+                    matched_line = max(matched_line, cur_line)
+                    best_action = action
+                    
+        return best_action
 
     def SelectAction(self, actions, game_state):
         start_time = time.time()
         self.count += 1
         # hand code?? hard code
-        best_action = random.choice(actions)
+        best_action = self.bestRandomAction(game_state,actions)
         alternative_actions = []
         for action in actions:
             if not isinstance(action, str):
