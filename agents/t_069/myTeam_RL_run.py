@@ -165,8 +165,7 @@ class myAgent(Agent):
             best_action = priority_list[0][0]
         return best_action
 
-
-    def DoAction(self, state, action):
+    def DoAction(self, state, action, _id):
         """
         Performs a given action on the state, altering it.
 
@@ -175,7 +174,7 @@ class myAgent(Agent):
             action (Action): The action to be performed.
             _id (int): The ID of the agent.
         """
-        state = self.game_rule.generateSuccessor(state, action, self.id)
+        state = self.game_rule.generateSuccessor(state, action, _id)
 
     def CalFeatures(self, state, action):
         """
@@ -191,7 +190,7 @@ class myAgent(Agent):
         """
         features = []
         next_state = deepcopy(state)
-        self.DoAction(next_state, action)
+        self.DoAction(next_state, action,self.id)
         # F1 Floor line
         floor_tiles = len(next_state.agents[self.id].floor_tiles)
         features.append(floor_tiles / 7)

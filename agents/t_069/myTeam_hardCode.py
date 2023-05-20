@@ -1,9 +1,7 @@
 import Azul.azul_utils as utils
 from template import Agent
-import time, random
 from Azul.azul_model import AzulGameRule as GameRule
 from copy import deepcopy
-from collections import deque
 from Azul.azul_utils import *
 
 THINKTIME = 0.9
@@ -11,7 +9,6 @@ NUM_PLAYER = 2
 GAMMA = 0.9
 EPS = 0.6
 LINES = 5
-
 
 class myAgent(Agent):
     def __init__(self, _id):
