@@ -1,14 +1,19 @@
 from template import Agent
-import time,myTeam_hardcode2,heapq, json
+import time,random,heapq, json
 from copy import deepcopy
 from Azul.azul_model import AzulGameRule as GameRule
+import numpy as np
+from keras.models import Sequential
+from keras.layers import Dense
+from keras.optimizers import Adam
+from keras.models import load_model
 
 from collections import deque
 
-THINKTIME   = 0.9
+THINKTIME = 0.9
 NUM_PLAYERS = 2
-ALPHA = 0.01
-GAMMA = 0.5
+ALPHA = 0.1
+GAMMA = 0.6
 EPSILON = 0.1
 
 class myAgent(Agent):
@@ -16,9 +21,17 @@ class myAgent(Agent):
         super().__init__(_id)
         self.count = 0
         self.game_rule = GameRule(NUM_PLAYERS)
-        self.weight = [0,0,0,0,0,0]
-
-    # Generates actions from this state.
+        self.model = self.build_model()
+    
+    def build_model(self):
+        model = Sequential()
+        model.add(Dense(24, input_dim=6, activation='relu'))
+        model.add(Dense(24, activation='relu'))
+        model.add(Dense(1, activation='linear'))  # the output is the Q-value
+        model.compile(loss='mse', optimizer=Adam())
+        return model
+    
+     # Generates actions from this state.
     def GetActions(self, state, _id):
         actions = self.game_rule.getLegalActions(state, _id)
         if len(actions) == 0:
@@ -67,28 +80,21 @@ class myAgent(Agent):
             print("Timeout!!!!!!")
             return True
         return False
-        
-    def CalQValue(self, state, action,_id):
-        features = self.CalFeature(state,action,_id)
-        if len(features) != len(self.weight):
-            print("Length not matched!!!!!!!!!")
-            return -99999
-        else: 
-            ans = 0
-            for i in range(len(features)):
-                ans += features[i] * self.weight[i]
-        return ans
+    
+    def CalQValue(self, state, action, _id, start_time):
+        while self.time_out(start_time):
+            features = np.array(self.CalFeature(state, action, _id)).reshape(-1, 6)
+            return self.model.predict(features)[0]
+        return self.model.predict(features)[0]
     
     def CalFeature(self, state, action, _id):
         features = []
         next_state = deepcopy(state)
         self.DoAction(next_state, action, _id)
-       
-        # Floor line
+
         floor_tiles = len(next_state.agents[_id].floor_tiles)
         features.append(floor_tiles/7)
 
-        # Line 1-5
         for i in range(5):
             if next_state.agents[_id].lines_number[i] == i+1:
                 features.append(1)
@@ -102,7 +108,7 @@ class myAgent(Agent):
             for action in actions:
                 # Check for Time out
                 if self.time_out(start_time):
-                    break
+                    return None, None
                 Q_value = self.CalQValue(game_state,action, _id)
 
                 # Update Q
@@ -123,12 +129,15 @@ class myAgent(Agent):
                         opponent_best_Q = opponent_Q
                         opponent_best_action = action
         return opponent_best_action, opponent_best_Q
-
-    def SelectAction(self, actions, game_state):
-        with open("agents/t_069/RL_weight/weight.json",'r',encoding='utf-8')as w:
-            self.weight = json.load(w)['weight']
-        # print(self.weight)
     
+    def save_model(self, filename="model_weights.h5"):
+        self.model.save_weights(filename)
+
+    def load_model(self, filename="model_weights.h5"):
+        self.model.load_weights(filename)
+
+    
+    def SelectAction(self, actions, game_state):
         start_time = time.time()
         best_action = self.bestRandomAction(game_state,actions)
         best_Q = -float('inf')
@@ -137,7 +146,9 @@ class myAgent(Agent):
         if len(actions) > 1:
             # Player's best action & best Q
             best_action, best_Q = self.bestActionPlayer(game_state,actions,self.id,start_time,best_Q,best_action)
-
+            if best_action is None:
+                return self.bestRandomAction(game_state,actions)
+            
             # Next state (Opponent)
             next_state = deepcopy(game_state)
             self.DoAction(next_state,best_action,self.id)
@@ -149,6 +160,9 @@ class myAgent(Agent):
 
             # Opponent best action
             opponent_best_action, opponent_best_Q = self.bestActionOpponent(next_state,opponent_actions,opponent_id,opponent_best_Q,opponent_best_action)
+            if opponent_best_action is None:
+                return self.bestRandomAction(game_state,actions)
+            
 
             # Do opponent action:
             self.DoAction(next_state,opponent_best_action,opponent_id)
@@ -165,14 +179,14 @@ class myAgent(Agent):
                 best_next_Q = max(Q_value,best_next_Q)
 
             # Feature
-            features = self.CalFeature(game_state,best_action,self.id)
-            delta = reward + GAMMA * best_next_Q - best_Q
+            target = self.model.predict(np.array(self.CalFeature(game_state, best_action, self.id)).reshape(-1, 6))
+            Q_values = [self.model.predict(np.array(self.CalFeature(next_state, action, self.id)).reshape(-1, 6)) for action in self.GetActions(next_state, self.id)]
+            max_Q = max(Q_values)
+            target[0] += ALPHA * (reward + GAMMA * max_Q[0])
 
-            # Update weight
-            for i in range(len(features)):
-                self.weight[i] += ALPHA * delta * features[i]
 
-            # Write to weight
-            with open("agents/t_069/RL_weight/weight.json",'w',encoding='utf-8') as w:
-                json.dump({"weight": self.weight},w,indent = 4, ensure_ascii=False)
+            self.model.fit(np.array(self.CalFeature(game_state, best_action, self.id)).reshape(-1, 6), target, epochs=1, verbose=0)
+        
+            self.save_model()
+
         return best_action
