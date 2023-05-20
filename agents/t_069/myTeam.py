@@ -18,7 +18,28 @@ class myAgent(Agent):
 
     def DoAction(self, state, action):
         state = self.game_rule.generateSuccessor(state, action, self.id)
+    
+    def bestRandomAction(self,state,actions):
+        best_action = random.choice(actions)
+        game_state = deepcopy(state)
+        alternative_actions = []
+        for action in actions:
+            if not isinstance(action, str):
+                if action[2].num_to_floor_line == 0:
+                    alternative_actions.append(action)
+                elif best_action[2].num_to_floor_line > action[2].num_to_floor_line:
+                    best_action = action
+        if (len(alternative_actions) > 0):
+            best_action = random.choice(alternative_actions)
+            matched_line = -1
 
+            for action in alternative_actions:
+                cur_line = action[2].pattern_line_dest
+                if cur_line >= 0 and game_state.agents[self.id].lines_number[cur_line] + action[2].num_to_pattern_line == cur_line+1:
+                    matched_line = max(matched_line, cur_line)
+                    best_action = action
+
+        return best_action
 
     def CalFeatures(self, state, action):
         features = []
@@ -48,7 +69,7 @@ class myAgent(Agent):
 
     def SelectAction(self, actions, game_state):
         start_time = time.time()
-        best_action = random.choice(actions)
+        best_action = self.bestRandomAction(game_state,actions)
         best_Q_value = -999999
         if len(actions) > 1:
             for action in actions:
