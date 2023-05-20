@@ -105,7 +105,6 @@ class Minimax:
             self.depth = 4
             
     def minimax(self, state, depth, is_maximizing, agent, id, alpha, beta, max_time=0.9):
-        self.count+=1
         if depth == 0 or agent.GameEnd(state):
             return agent.GetScore(state, id)
 
@@ -164,7 +163,6 @@ class Minimax:
             alpha = max(alpha, best_value)
             elapsed_time = time.time() - self.start_time
             if elapsed_time >= max_time:
-                print(1)
                 return self.best_random
 
         return best_action
