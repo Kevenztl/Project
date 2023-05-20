@@ -86,32 +86,6 @@ class myAgent():
 
         return best_action
 
-    # def SelectAction(self, actions, rootstate):
-    #     start_time = time.time()
-    #     best_action = random.choice(actions)
-    #     alternative_actions = []
-    #     for action in actions:
-    #         if not isinstance(action, str):
-    #             if action[2].num_to_floor_line == 0:
-    #                 alternative_actions.append(action)
-    #             elif best_action[2].num_to_floor_line > action[2].num_to_floor_line:
-    #                 best_action = action
-    #     if len(alternative_actions) > 0:
-    #         best_action = random.choice(alternative_actions)
-    #         matched_line = -1
-
-    #         for action in alternative_actions:
-    #             cur_line = action[2].pattern_line_dest
-    #             if cur_line >= 0 and rootstate.agents[self.id].lines_number[cur_line] + action[2].num_to_pattern_line == cur_line + 1:
-    #                 matched_line = max(matched_line, cur_line)
-    #                 best_action = action
-
-    #     minimax = Minimax(2, start_time, best_action)
-
-    #     best_action = minimax.get_best_action(rootstate, self, self.id, True)
-
-
-    #     return best_action
 
 
 
@@ -131,6 +105,7 @@ class Minimax:
             self.depth = 4
             
     def minimax(self, state, depth, is_maximizing, agent, id, alpha, beta, max_time=0.9):
+        self.count+=1
         if depth == 0 or agent.GameEnd(state):
             return agent.GetScore(state, id)
 
