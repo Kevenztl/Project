@@ -43,9 +43,9 @@ class MCTS:
     #     if action_visits == 0:
     #         return float('inf')
     #     return action_value / action_visits + c * math.sqrt(math.log(total_visits) / action_visits)
-    def UCTValue(self, state, t_state, action, total_visits, c=1, q_weight=1):
+    def UCTValue(self, state, t_state, action, total_visits, c=1, q_weight=0.5):
         action_visits = self.ns.get((t_state, action), 0)
-        action_value = self.agent.CalQValue(state, action)  # Use Q-value as the action value
+        action_value = self.agent.CalQValue(state, action,self.id)  # Use Q-value as the action value
         if action_visits == 0:
             return float('inf')
         ucb_value = action_value / action_visits + c * math.sqrt(math.log(total_visits) / action_visits)
@@ -54,22 +54,27 @@ class MCTS:
         return uct_value
 
     
-    def heuristic_score(self, action, state):
+    def heuristic_score(self, action, state,id):
         next_state = deepcopy(state)
-        self.agent.DoAction(next_state, action, self.id)
+        self.agent.DoAction(next_state, action, id)
 
         score = 0
         # Add a bonus if the action completes a row or column
-        if any(np.count_nonzero(next_state.agents[self.id].grid_state, axis=1) == next_state.agents[self.id].GRID_SIZE): # check rows
+        if any(np.count_nonzero(next_state.agents[id].grid_state, axis=1) == next_state.agents[id].GRID_SIZE): # check rows
             score += 10
-        if any(np.count_nonzero(next_state.agents[self.id].grid_state, axis=0) == next_state.agents[self.id].GRID_SIZE): # check columns
+        if any(np.count_nonzero(next_state.agents[id].grid_state, axis=0) == next_state.agents[id].GRID_SIZE): # check columns
             score += 10
 
         # Subtract a penalty if the action causes tiles to fall on the floor
-        if np.count_nonzero(next_state.agents[self.id].floor) > np.count_nonzero(state.agents[self.id].floor):
-            score -= 5 * (np.count_nonzero(next_state.agents[self.id].floor) - np.count_nonzero(state.agents[self.id].floor))
+        if np.count_nonzero(next_state.agents[id].floor) > np.count_nonzero(state.agents[id].floor):
+            score -= 5 * (np.count_nonzero(next_state.agents[id].floor) - np.count_nonzero(state.agents[id].floor))
+
+        # Check if the action fills a pattern line beyond its capacity
+        # if any(next_state.agents[id].lines_number[line] > line + 1 for line in range(next_state.agents[id].PATTERN_LINES)):
+        #     score -= 100  # Apply a penalty for filling a pattern line beyond its capacity
 
         return score
+
 
 
     def select(self, t_state, actions, state, queue, start_time):
@@ -98,7 +103,7 @@ class MCTS:
         t_cur_state = self.TransformState(state, self.id)
         available_actions = self.FullyExpanded(t_cur_state, actions)
         if len(available_actions) != 0:
-            action = max(available_actions, key=lambda a: self.agent.CalQValue(state, a)+ self.heuristic_score(a, state))  # Choose the action with the highest Q-value
+            action = max(available_actions, key=lambda a: self.agent.CalQValue(state, a,self.id)+self.heuristic_score(a, state,self.id))  # Choose the action with the highest Q-value
             if t_cur_state in self.expanded_action_s:
                 self.expanded_action_s[t_cur_state].append(action)
             else:
@@ -109,7 +114,6 @@ class MCTS:
             actions = self.agent.GetActions(next_state, self.id)
             state = next_state
         return state, actions, queue
-
     def simulate(self, state, new_actions, start_time, max_depth=20):
         length = 0
         depth = 0
@@ -120,16 +124,38 @@ class MCTS:
                 print("MC2T")
                 return None, None
             # Choose the action with the highest Q-value + heuristic score
-            cur_action = max(new_actions, key=lambda a: self.agent.CalQValue(state, a)+ self.heuristic_score(a, state))
+            cur_action = max(new_actions, key=lambda a: self.agent.CalQValue(state, a,self.id)+self.heuristic_score(a, state,self.id))
             next_state = deepcopy(state)
             self.agent.DoAction(next_state, cur_action, self.id)
             op_actions = self.agent.GetActions(next_state, 1 - self.id)
-            op_action = self.agent.bestRandomAction(state, op_actions, 1 - self.id)
+            # Change here: instead of choosing a random action for the opponent, choose the one with the lowest Q-value + heuristic score
+            op_action = min(op_actions, key=lambda a: self.agent.CalQValue(next_state, a,1-self.id)+self.heuristic_score(a, next_state,1-self.id), default=None)
             self.agent.DoAction(next_state, op_action, 1 - self.id)
             new_actions = self.agent.GetActions(next_state, self.id)
             state = next_state
         reward = self.agent.GetScore(state, self.id)
         return reward, length
+
+    # def simulate(self, state, new_actions, start_time, max_depth=20):
+    #     length = 0
+    #     depth = 0
+    #     while not self.agent.GameEnd(state) and depth < max_depth:
+    #         length += 1
+    #         depth += 1
+    #         if time.time() - start_time >= THINKTIME:
+    #             print("MC2T")
+    #             return None, None
+    #         # Choose the action with the highest Q-value + heuristic score
+    #         cur_action = max(new_actions, key=lambda a: self.agent.CalQValue(state, a)+ self.heuristic_score(a, state))
+    #         next_state = deepcopy(state)
+    #         self.agent.DoAction(next_state, cur_action, self.id)
+    #         op_actions = self.agent.GetActions(next_state, 1 - self.id)
+    #         op_action = self.agent.bestRandomAction(state, op_actions, 1 - self.id)
+    #         self.agent.DoAction(next_state, op_action, 1 - self.id)
+    #         new_actions = self.agent.GetActions(next_state, self.id)
+    #         state = next_state
+    #     reward = self.agent.GetScore(state, self.id)
+    #     return reward, length
 
 
     def backpropagate(self, reward, length, queue, start_time):
@@ -193,7 +219,14 @@ class myAgent(Agent):
         return actions
     def DoAction(self, state, action, _id):
         self.game_rule.generateSuccessor(state, action, _id)
+    # def DoAction(self, state, action, _id):
+    #     if not isinstance(action, str):
+    #         available_tiles = self.game_rule.getAvailableTiles(state, action.tile_type)  # 可用的瓷砖数量
+    #         if action.number > available_tiles:
+    #             action.number = available_tiles  # 如果减去的数量超过了可用的数量，将减去的数量设置为可用的数量
+    #     self.game_rule.generateSuccessor(state, action, _id)
 
+    #             self.game_rule.generateSuccessor(state, action, _id)
     def GetScore(self, state, _id):
         # base_score = self.game_rule.calScore(state, _id) - self.game_rule.calScore(state, 1 - _id)
         base_score = self.game_rule.calScore(state, _id)
@@ -203,7 +236,7 @@ class myAgent(Agent):
         
 
         return base_score+tile_factor
-    def CalFeatures(self, state, action):
+    def CalFeatures(self, state, action,id):
         """
         Calculates the feature vector for a given state-action pair.
 
@@ -217,19 +250,19 @@ class myAgent(Agent):
         """
         features = []
         next_state = deepcopy(state)
-        self.DoAction(next_state, action,self.id)
+        self.DoAction(next_state, action,id)
         # F1 Floor line
-        floor_tiles = len(next_state.agents[self.id].floor_tiles)
+        floor_tiles = len(next_state.agents[id].floor_tiles)
         features.append(floor_tiles / 7)
         # F2-6 complete line 1-5
         for i in range(5):
-            if next_state.agents[self.id].lines_number[i] == i+1:
+            if next_state.agents[id].lines_number[i] == i+1:
                 features.append(1)
             else:
                 features.append(0)
         return features
 
-    def CalQValue(self, state, action):
+    def CalQValue(self, state, action,id):
         """
         Calculates the Q-value of an action, given a state.
 
@@ -241,7 +274,7 @@ class myAgent(Agent):
         Returns:
             ans (float): The calculated Q-value.
         """
-        features = self.CalFeatures(state, action)
+        features = self.CalFeatures(state, action,id)
         if len(features) != len(self.weight):
             print("F ansd W length not matched")
             return -float('inf')
@@ -427,7 +460,7 @@ class myAgent(Agent):
                 if time.time() - start_time > THINKTIME:
                     print("timeout")
                     break
-                Q_value = self.CalQValue(game_state, action)
+                Q_value = self.CalQValue(game_state, action,self.id)
                 if Q_value > best_Q_value:
                     best_Q_value = Q_value
                     best_action = action
@@ -438,7 +471,7 @@ class myAgent(Agent):
             return best_action
         else:
             mct = MCTS(self, self.id)
-            best_action = mct.run(game_state, self.id, 0.9, start_time,best_action)
+            best_action = mct.run(game_state, self.id, THINKTIME, start_time,best_action)
             # if self.GetScore(self.DoAction(game_state,best_action,self.id),self.id)<=self.GetScore(self.DoAction(game_state,best_select,self.id),self.id):
             #     best_action = best_select
             return best_action
