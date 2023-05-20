@@ -1,6 +1,6 @@
 from template import Agent
 from Azul.azul_model import AzulGameRule as GameRule
-import random, time, json
+import myTeam_hardcode2, time, json
 from copy import deepcopy
 
 THINKTIME = 0.9

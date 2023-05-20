@@ -9,7 +9,7 @@
 # IMPORTS AND CONSTANTS ----------------------------------------------------------------------------------------------#
 
 
-import time, random
+import time, myTeam_hardcode2
 from Azul.azul_model import AzulGameRule as GameRule
 from copy import deepcopy
 from collections import deque

@@ -1,5 +1,5 @@
 from template import Agent
-import time,random,heapq
+import time,myTeam_hardcode2,heapq
 from copy import deepcopy
 from Azul.azul_model import AzulGameRule as GameRule
 
