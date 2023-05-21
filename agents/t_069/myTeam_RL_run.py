@@ -176,7 +176,7 @@ class myAgent(Agent):
         """
         state = self.game_rule.generateSuccessor(state, action, _id)
 
-    def CalFeatures(self, state, action):
+    def CalFeature(self, state, action, _id):
         """
         Calculates the feature vector for a given state-action pair.
 
@@ -190,17 +190,34 @@ class myAgent(Agent):
         """
         features = []
         next_state = deepcopy(state)
-        self.DoAction(next_state, action,self.id)
-        # F1 Floor line
-        floor_tiles = len(next_state.agents[self.id].floor_tiles)
+        self.DoAction(next_state, action, _id)
+
+        # Floor line
+        floor_tiles = len(next_state.agents[_id].floor_tiles)
         features.append(floor_tiles / 7)
-        # F2-6 complete line 1-5
+
+        # Line 1-5
         for i in range(5):
-            if next_state.agents[self.id].lines_number[i] == i+1:
+            if next_state.agents[_id].lines_number[i] == i + 1:
                 features.append(1)
             else:
                 features.append(0)
+
+        # Feature: Number of completed rows
+        completed_rows = sum([1 for row in next_state.agents[_id].grid_state if sum(row) == len(row)])
+        features.append(completed_rows / 5)
+
+        # Feature: Number of completed columns
+        completed_columns = sum([1 for col in zip(*next_state.agents[_id].grid_state) if sum(col) == len(col)])
+        features.append(completed_columns / 5)
+
+        # Feature: Number of completed sets (a set is a collection of all 5 colors in the grid_state)
+        grid_state_flat = [item for sublist in next_state.agents[_id].grid_state for item in sublist]
+        min_tile_count = min([grid_state_flat.count(tile) for tile in set(grid_state_flat)])
+        features.append(min_tile_count / 5)
+
         return features
+
 
     def CalQValue(self, state, action):
         """
