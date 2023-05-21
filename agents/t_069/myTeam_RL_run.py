@@ -18,7 +18,7 @@ class myAgent(Agent):
         """
         super().__init__(_id)
         self.game_rule = GameRule(NUM_PLAYERS)
-        self.weight = [0, 0, 0, 0, 0, 0]
+        self.weight = [0]*10
         with open("agents/t_069/RL_weight/weight.json", "r", encoding='utf-8') as fw:
             self.weight = json.load(fw)['weight']
         print(self.weight)
@@ -176,6 +176,27 @@ class myAgent(Agent):
         """
         state = self.game_rule.generateSuccessor(state, action, _id)
 
+    def CalQValue(self, state, action,_id):
+        """
+        Calculates the Q-value of an action, given a state.
+
+        Args:
+            state (State): The current game state.
+            action (Action): The action to be performed.
+            _id (int): The ID of the agent.
+
+        Returns:
+            ans (float): The calculated Q-value.
+        """
+        features = self.CalFeature(state,action,_id)
+        if len(features) != len(self.weight):
+            return -float('inf')
+        else: 
+            ans = 0
+            for i in range(len(features)):
+                ans += features[i] * self.weight[i]
+        return ans
+    
     def CalFeature(self, state, action, _id):
         """
         Calculates the feature vector for a given state-action pair.
@@ -218,29 +239,6 @@ class myAgent(Agent):
 
         return features
 
-
-    def CalQValue(self, state, action):
-        """
-        Calculates the Q-value of an action, given a state.
-
-        Args:
-            state (State): The current game state.
-            action (Action): The action to be performed.
-            _id (int): The ID of the agent.
-
-        Returns:
-            ans (float): The calculated Q-value.
-        """
-        features = self.CalFeatures(state, action)
-        if len(features) != len(self.weight):
-            print("F ansd W length not matched")
-            return -float('inf')
-        else:
-            ans = 0
-            for i in range(len(features)):
-                ans += features[i] * self.weight[i]
-            return ans
-
     def SelectAction(self, actions, game_state):
         """
         Selects the action the agent will take.
@@ -260,7 +258,7 @@ class myAgent(Agent):
                 if time.time() - start_time > THINKTIME:
                     print("timeout")
                     break
-                Q_value = self.CalQValue(game_state, action)
+                Q_value = self.CalQValue(game_state, action,self.id)
                 if Q_value > best_Q_value:
                     best_Q_value = Q_value
                     best_action = action

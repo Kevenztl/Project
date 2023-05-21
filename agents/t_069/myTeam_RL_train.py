@@ -23,7 +23,7 @@ class myAgent(Agent):
         super().__init__(_id)
         self.count = 0
         self.game_rule = GameRule(NUM_PLAYERS)
-        self.weight = [0,0,0,0,0,0]
+        self.weight = [0]*10
 
     def GetActions(self, state, _id):
         """
