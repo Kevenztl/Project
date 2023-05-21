@@ -18,7 +18,7 @@ class myAgent(Agent):
         """
         super().__init__(_id)
         self.game_rule = GameRule(NUM_PLAYERS)
-        self.weight = [0]*10
+        self.weight = [0]*9
         with open("agents/t_069/RL_weight/weight.json", "r", encoding='utf-8') as fw:
             self.weight = json.load(fw)['weight']
         print(self.weight)
